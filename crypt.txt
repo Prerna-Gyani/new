@@ -1,0 +1,439 @@
+
+Practical 1
+
+Aim: Program to implement password salting and hashing to create secure passwords. 
+
+Code:
+#simple password salting and hashing -> encrypt
+import bcrypt
+#print("Version bcrypt: ",bcrypt.__version__)
+
+
+print("Prerna Gyanchandani")
+pwd = input('Enter password: ')
+byte_pwd = pwd.encode('utf-8') #encoding into bytes
+salt = bcrypt.gensalt()
+hashed = bcrypt.hashpw(byte_pwd, salt)
+print('Hashed passsword: ', hashed)
+
+#Verify password
+check_pwd = input('Re-enter password to verify:')
+if bcrypt.checkpw(check_pwd.encode('utf-8'),hashed):
+    print('Password is correct!')
+else:
+    print('Password is incorrect!')
+Output:
+
+
+Practical 2
+
+Aim: Program to implement various classical ciphers-Substitution Cipher, Vigenère Cipher, and Affine cipher.
+Code:
+# Substitution (Caesar) Cipher
+def caesar_encrypt_simple(text, key):
+    result = ""
+    for c in text:
+        if c.islower():
+            shifted = ord(c) - ord('a')
+            shifted = shifted + key
+            shifted = shifted % 26
+            new_char = chr(shifted + ord('a'))
+            result = result + new_char
+        elif c.isupper():
+            shifted = ord(c) - ord('A')
+            shifted = shifted + key
+            shifted = shifted % 26
+            new_char = chr(shifted + ord('A'))
+            result = result + new_char
+        else:
+            result = result + c
+    return result
+
+def caesar_encrypt(text, key):
+    return ''.join(
+        chr((ord(c) - ord('a') + key) % 26 + ord('a')) if c.islower() else
+        chr((ord(c) - ord('A') + key) % 26 + ord('A')) if c.isupper() else c
+        for c in text)
+def caesar_decrypt(cipher, key):
+    return caesar_encrypt(cipher, -key)
+
+# Vigenère Cipher
+def vigenere_encrypt(text, key):
+    key = key.lower()
+    letters = [c for c in text if c.isalpha()]
+    shifts = [ord(key[i % len(key)]) - ord('a') for i in range(len(letters))]
+    it = iter(shifts)
+    return ''.join(
+        chr((ord(c) - ord('a') + next(it)) % 26 + ord('a')) if c.islower() else
+        chr((ord(c) - ord('A') + next(it)) % 26 + ord('A')) if c.isupper() else c
+        for c in text)
+def vigenere_decrypt(cipher, key):
+    key = key.lower()
+    letters = [c for c in cipher if c.isalpha()]
+    shifts = [ord(key[i % len(key)]) - ord('a') for i in range(len(letters))]
+    it = iter(shifts)
+    return ''.join(
+        chr((ord(c) - ord('a') - next(it)) % 26 + ord('a')) if c.islower() else
+        chr((ord(c) - ord('A') - next(it)) % 26 + ord('A')) if c.isupper() else c
+        for c in cipher)
+
+# Affine Cipher
+def affine_encrypt(text, a, b):
+    return ''.join(
+        chr((a * (ord(c) - ord('a') ) + b) % 26 + ord('a')) if c.islower() else
+        chr((a * (ord(c) - ord('A') ) + b) % 26 + ord('A')) if c.isupper() else c
+        for c in text)
+def modinv(a, m):
+    for x in range(1, m):
+        if (a * x) % m == 1:
+            return x
+    raise ValueError('No modular inverse')
+def affine_decrypt(cipher, a, b):
+    a_inv = modinv(a, 26)
+    return ''.join(
+        chr((a_inv * ((ord(c) - ord('a') - b)) % 26) + ord('a')) if c.islower() else
+        chr((a_inv * ((ord(c) - ord('A') - b)) % 26) + ord('A')) if c.isupper() else c
+        for c in cipher)
+if __name__ == "__main__":
+    text = input('Text: ')
+    print('\nSubstitution (Caesar) Cipher:')
+    k = int(input('Key: '))
+    enc = caesar_encrypt(text, k)
+    print('Encrypted:', enc)
+    print('Decrypted:', caesar_decrypt(enc, k))
+    print('\nVigenère Cipher:')
+    while True:
+        key = input('Key (letters only): ')
+        if key.isalpha():
+            break
+        print('Error: Key must contain only letters.')
+    enc = vigenere_encrypt(text, key)
+    print('Encrypted:', enc)
+    print('Decrypted:', vigenere_decrypt(enc, key))
+    print('\nAffine Cipher:')
+    a = int(input('number value for Key a: '))
+    b = int(input('number value for Key b: '))
+    enc = affine_encrypt(text, a, b)
+    print('Encrypted:', enc)
+    print('Decrypted:', affine_decrypt(enc, a, b))
+
+Output:
+
+key for substitution cipher is from 1 to 26
+vigenere cipher key : crack or any
+affine cipher key a : 21 , b: 17
+
+Practical 3
+
+Aim: Program to demonstrate cryptanalysis (e.g., breaking Caesar or Vigenère Cipher).
+Code:
+def break_caesar(cipher):
+    for key in range(26):
+        plain = ""
+        for c in cipher:
+            if c.isalpha():
+                shift = ord('a') if c.islower() else ord('A')
+                plain += chr((ord(c) - shift - key) % 26 + shift)
+            else:
+                plain += c
+        print(f"Key {key}: {plain}")
+cipher_text = input("Enter the Caesar cipher text: ")
+break_caesar(cipher_text)
+Output:
+enter any text
+
+Practical 4
+
+Aim: Program to implement AES algorithm for file encryption and decryption.
+Code:
+#pip install pycryptodome
+#padding when there is 16bit and to store is only 6bits then to fill remaining space is filled by #different bits is padding & emptying it is unpadding.
+from Crypto.Cipher import AES
+from Crypto.Random import get_random_bytes
+from Crypto.Util.Padding import pad, unpad
+def encrypt_file(input_file, output_file, key):  
+    with open(input_file, 'rb') as f:
+        data = f.read()  
+    cipher = AES.new(key, AES.MODE_CBC)  
+    encrypted = cipher.encrypt(pad(data, AES.block_size))  
+    with open(output_file, 'wb') as f:
+        f.write(cipher.iv + encrypted)  
+def decrypt_file(input_file, output_file, key):
+    with open(input_file, 'rb') as f:
+        iv = f.read(16)  
+        encrypted = f.read()  
+    cipher = AES.new(key, AES.MODE_CBC, iv)  
+    decrypted = unpad(cipher.decrypt(encrypted), AES.block_size) 
+    with open(output_file, 'wb') as f:
+        f.write(decrypted) 
+def main():
+    # Generate a random 16-byte (128-bit) AES key
+    key = get_random_bytes(16)
+    input_file = input("Enter the path of the input file to encrypt/decrypt: ").strip()
+    encrypt_file(input_file, 'encrypt.txt', key)
+    print(f"File encrypted at: ")
+    print(encrypt_file)
+    decrypt_file('encrypt.txt', 'decrypt.txt', key)
+    print(f"File decrypted ")
+print("Prerna Gyanchandani Rno 6")
+if __name__ == "__main__":
+    main()
+Output:
+
+
+make demo.txt is same folder 
+write demo.txt as path for input file
+
+
+Practical 5
+
+Aim: Program to implement various block cipher modes.
+Code:
+#pip install pycryptodome
+from Crypto.Cipher import AES
+from Crypto.Random import get_random_bytes
+from Crypto.Util.Padding import pad, unpad
+from Crypto.Util import Counter
+print("Prerna Gyanchandani Rno 6")
+data = b"Hello Block Cipher Modes!"
+key = get_random_bytes(16)
+print("Plaintext:", data)
+# -------- ECB --------
+cipher = AES.new(key, AES.MODE_ECB)
+ct = cipher.encrypt(pad(data, AES.block_size))
+#print("ecb encrypt: ",ct)
+pt = unpad(cipher.decrypt(ct), AES.block_size)
+print("ECB:", pt)
+# -------- CBC --------
+cipher = AES.new(key, AES.MODE_CBC)
+ct = cipher.encrypt(pad(data, AES.block_size))
+#print("cbc encrypt: ",ct)
+cipher_dec = AES.new(key, AES.MODE_CBC, iv=cipher.iv)
+pt = unpad(cipher_dec.decrypt(ct), AES.block_size)
+print("CBC:", pt)
+# -------- CFB --------
+cipher = AES.new(key, AES.MODE_CFB)
+ct = cipher.encrypt(data)
+#print("cfb encrypt: ",ct)
+cipher_dec = AES.new(key, AES.MODE_CFB, iv=cipher.iv)
+pt = cipher_dec.decrypt(ct)
+print("CFB:", pt)
+# -------- OFB --------
+cipher = AES.new(key, AES.MODE_OFB)
+ct = cipher.encrypt(data)
+#print("ofb encrypt:",ct)
+cipher_dec = AES.new(key, AES.MODE_OFB, iv=cipher.iv)
+pt = cipher_dec.decrypt(ct)
+print("OFB:", pt)
+# -------- CTR --------
+ctr = Counter.new(128)
+cipher = AES.new(key, AES.MODE_CTR, counter=ctr)
+ct = cipher.encrypt(data)
+#print("ctr encrypt: ",ct)
+ctr = Counter.new(128)
+cipher_dec = AES.new(key, AES.MODE_CTR, counter=ctr)
+pt = cipher_dec.decrypt(ct)
+print("CTR:", pt)
+Output:
+
+
+only run file_name.py
+
+
+Practical 6
+
+Aim: Program to implement Steganography for hiding messages inside the image file.
+From Windows cmd.exec on place where image and zip
+Cmd:  copy /b demo.png + demo.zip output.jpg
+
+Take any image 
+Package Installation Cmd: pip install stegano pillow
+
+Code:
+from stegano import lsb
+from PIL import Image
+import os
+def hide_message(image_path, message, output_path=None):
+    base, ext = os.path.splitext(image_path)
+    # Convert to PNG if JPG (stegano requires lossless format)
+    if ext.lower() in ['.jpg', '.jpeg']:
+        png_path = base + '.png'
+        Image.open(image_path).save(png_path)
+        image_path = png_path
+    # Set output path
+    if output_path is None:
+        output_path = base + '-secret.png'
+    steg = lsb.hide(image_path, message)
+    steg.save(output_path)
+    print(f'Message hidden in: {output_path}')
+    return output_path
+def reveal_message(image_path):
+    """Reveal a hidden message from an image"""
+    msg = lsb.reveal(image_path)
+    return msg
+if __name__ == "__main__":
+    input_image = input('Enter image path (JPG/PNG): ')
+    message = input('Enter secret message: ')
+    output = hide_message(input_image, message)
+    revealed = reveal_message(output)
+    print('Hidden message:', revealed)
+Output:
+
+enter image path same folder:
+ demo.png
+secret message: Hello this is Gyani
+
+Practical 7
+
+Aim: Program to implement HMAC for signing messages.
+Code:
+import hmac
+import hashlib
+import secrets
+# Initial sent message
+sent_msg = input('Enter message: ')
+key = secrets.token_bytes(32) 
+s_md_l = hmac.new(key=key, msg=sent_msg.encode(), digestmod=hashlib.sha256)
+init_msg_digest = s_md_l.hexdigest()
+#Received message
+received = sent_msg
+r_md_l = hmac.new(key=key, msg=received.encode(), digestmod=hashlib.sha256)
+recv_msg_digest = r_md_l.hexdigest()
+#Comparing sent and received msg
+print('----Before Tampering-----')
+print('Original Message:', sent_msg)
+print('Original Digest:', init_msg_digest)
+print('Received Message:', received)
+print('Received Digest:', recv_msg_digest)
+print('Is the message received without any tampering:', 'Yes' if hmac.compare_digest(init_msg_digest, recv_msg_digest) else 'No')
+# Tampered message
+tampered_msg = sent_msg[1:] if len(sent_msg) > 0 else sent_msg  # Avoid error if empty
+md_2 = hmac.new(key=key, msg=tampered_msg.encode(), digestmod=hashlib.sha256)
+tampered_msg_digest = md_2.hexdigest()
+# Comparing after tampering
+print('----After Tampering-----')
+print('Tampered Message:', tampered_msg)
+print('Tampered Digest:', tampered_msg_digest)
+print('Is the message received without any tampering:', 'Yes' if hmac.compare_digest(init_msg_digest, tampered_msg_digest) else 'No')
+#mac - to get msg authentication code - it maintains integrity, msg digest - unique id of text, skips 1 character
+Output:
+
+enter: gyani
+or this is a msg sent to gyani!!
+
+Practical 8
+
+Aim: Program to implement Sending Secure Messages Over IP Networks.
+Code: 
+⇒ server.py
+import socket
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import unpad
+# shared secret key (16 bytes)
+key = b'1234567890abcdef'   
+s = socket.socket()
+s.bind(("0.0.0.0", 5000))
+s.listen(1)
+conn, addr = s.accept()
+print("Connected:", addr)
+iv = conn.recv(16)
+ciphertext = conn.recv(1024)
+print("\n--- Server ---")
+print("IV received (hex):", iv.hex())
+print("Ciphertext received (hex):", ciphertext.hex())
+cipher = AES.new(key, AES.MODE_CBC, iv)
+plaintext = unpad(cipher.decrypt(ciphertext), 16)
+print("Decrypted message:", plaintext.decode())
+conn.close()
+⇒ client.py
+import socket
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import pad
+from Crypto.Random import get_random_bytes
+# shared secret key (16 bytes)
+key = b'1234567890abcdef'
+msg = input("Enter message: ").encode()
+print("\n--- Client ---")
+print("Original message:", msg.decode())
+cipher = AES.new(key, AES.MODE_CBC)
+ciphertext = cipher.encrypt(pad(msg, 16))
+print("IV (hex):", cipher.iv.hex())
+print("Encrypted ciphertext (hex):", ciphertext.hex())
+s = socket.socket()
+s.connect(("127.0.0.1", 5000))
+s.send(cipher.iv)          
+s.send(ciphertext)         
+s.close()
+print("Message sent to server.")
+
+Output:
+Run server.py in one terminal (cmd): python server.py
+
+Then run client.py ==> python client.py in another terminal (cmd) and enter a message: Hi! Gyani here!!
+
+Check the message on server received from client:
+
+python server.py
+
+Practical 9
+
+Aim: Program to implement RSA encryption/decryption
+Code:
+#pip install pycryptodome
+# Key generation 
+p = 11 
+q = 13 
+# modulus 
+n = p * q 
+phi = (p-1)*(q-1) 
+# public exponent (coprime with phi) 
+e = 7 
+# find d such that (d*e) % phi = 1 
+for d in range(1, phi): 
+    if (d * e) % phi == 1: 
+        break 
+print("Public key (e, n):", (e, n)) 
+print("Private key (d, n):", (d, n)) 
+# message (number < n)
+#msg = 9 
+#print("Original:", msg) 
+# message (number < n) 
+print("Prerna Gyanchandani Rno 6")
+msg = int(input(f"Enter a number to encrypt (less than {n}): ")) 
+print("Original:", msg) 
+# Encryption: c = m^e mod n 
+cipher = pow(msg, e, n) 
+print("Encrypted:", cipher) 
+# Decryption: m = c^d mod n 
+plain = pow(cipher, d, n) 
+print("Decrypted:", plain) 
+
+Output:
+
+Public key: (7,143)
+Private key: (103, 143)
+
+enter number: 44 (different)
+enter number: 87 (same)
+enter number: 56 (same)
+
+RSA ADDITIONAL WITH STRING DATA (PRACTICE ONLY VERSION) - not include for exam
+Code:
+p = 11 
+q = 13 
+n = p * q  
+phi = (p-1)*(q-1) 
+e = 7 
+for d in range(1, phi): 
+    if (d * e) % phi == 1: 
+        break 
+print("Public key (e, n):", (e, n)) 
+print("Private key (d, n):", (d, n)) 
+msg = input("Enter a message to encrypt: ") 
+print("Original:", msg) 
+cipher = [pow(ord(ch), e, n) for ch in msg] 
+print("Encrypted:", cipher)
+plain = ''.join(chr(pow(c, d, n)) for c in cipher) 
+print("Decrypted:", plain)
+Output:
+
